@@ -37,6 +37,8 @@ var (
 	labels             = []string{daemonLabel}
 	metricNameRegex    = regexp.MustCompile("[^a-z0-9]+")
 	devicesRegex       = regexp.MustCompile(`"device" *: *"([A-Za-z0-9/]+)"`)
+	plusEndRegex       = regexp.MustCompile("\\+$")
+	minusEndRegex      = regexp.MustCompile("\\-$")
 )
 
 // CephDesc defines a metric type read from perf schema
@@ -78,6 +80,11 @@ func SocketToDaemonName(adminSocket *net.UnixAddr) string {
 // Prometheus naming rules
 func FixName(name string) string {
 	name = strings.ToLower(name)
+	// mds have some metrics like ino+ and ino-
+	// meanining inodes opened and closed
+	// expand them to avoid name collision after regex
+	name = plusEndRegex.ReplaceAllString(name, "_opened")
+	name = minusEndRegex.ReplaceAllString(name, "_closed")
 	return metricNameRegex.ReplaceAllString(name, "_")
 }
 

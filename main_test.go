@@ -20,6 +20,8 @@ func TestFixName(t *testing.T) {
 		{"throttle-msgr_dispatch_throttler-hb_back_client", "throttle_msgr_dispatch_throttler_hb_back_client"},
 		{"objecter-0x5571fe57b650", "objecter_0x5571fe57b650"},
 		{"throttle-objecter_ops-0x5571fe57b730", "throttle_objecter_ops_0x5571fe57b730"},
+		{"ino+", "ino_opened"},
+		{"ino-", "ino_closed"},
 	}
 
 	for _, p := range pairs {
