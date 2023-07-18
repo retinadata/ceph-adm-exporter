@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -37,8 +38,8 @@ var (
 	labels             = []string{daemonLabel}
 	metricNameRegex    = regexp.MustCompile("[^a-z0-9]+")
 	devicesRegex       = regexp.MustCompile(`"device" *: *"([A-Za-z0-9/]+)"`)
-	plusEndRegex       = regexp.MustCompile("\\+$")
-	minusEndRegex      = regexp.MustCompile("\\-$")
+	plusEndRegex       = regexp.MustCompile(`\+$`)
+	minusEndRegex      = regexp.MustCompile(`\-$`)
 )
 
 // CephDesc defines a metric type read from perf schema
@@ -107,7 +108,7 @@ func readFromSocket(adminSocket *net.UnixAddr, command []byte) (*[]byte, error) 
 		return nil, err
 	}
 	if four < 4 {
-		return nil, errors.New("Unable to read from admin socket")
+		return nil, errors.New("unable to read from admin socket")
 	}
 
 	len := binary.BigEndian.Uint32(lenB)
@@ -117,7 +118,7 @@ func readFromSocket(adminSocket *net.UnixAddr, command []byte) (*[]byte, error) 
 		return nil, err
 	}
 	if dataSize < int(len) {
-		return nil, errors.New("Read incomplete data from admin socket")
+		return nil, errors.New("read incomplete data from admin socket")
 	}
 	return &dataB, nil
 }
@@ -258,7 +259,7 @@ func NewCephADMCollector(asokGlob string) *CephADMCollector {
 		device:   prometheus.NewDesc(prometheus.BuildFQName(namespace, "", "device"), "Ceph OSD devices", append(labels, deviceLabel), nil),
 		asokGlob: asokGlob,
 	}
-	go ret.updateDecriptions()
+	ret.tickDecriptions()
 	return ret
 }
 
@@ -300,6 +301,16 @@ func (t *CephADMCollector) updateDecriptions() {
 		schemaToDescriptions(schema, &descriptions)
 	}
 	t.descriptions = descriptions
+}
+
+func (t *CephADMCollector) tickDecriptions() {
+	ticker := time.NewTicker(5 * time.Minute)
+	go func() {
+		for {
+			t.updateDecriptions()
+			<-ticker.C
+		}
+	}()
 }
 
 // Describe implements prometheus.Collector.Describe
